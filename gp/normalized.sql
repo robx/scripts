@@ -9,3 +9,11 @@ insert into times select round, 'competitive', time, players.id from combined in
 insert into times select substr(round,1,1)::int, 'casual', time, players.id from dcomb inner join players using (name) where round like '%ca';
 create table bonus (round int, points double precision, playerid int, foreign key (playerid) references players(id), unique (round, playerid));
 insert into bonus select * from (select substr(round,1,1)::int, points-array_sum(puzzles) as bonus, players.id from dcomb inner join players using (name) where round like '%co') as x where bonus > 0.0;
+create view played as with cas as (select playerid, count(distinct round) as casualcount from results where section = 'casual' group by playerid), comp as (select playerid, count(distinct round) as compcount from results where section = 'competitive' group by playerid) select playerid, coalesce(casualcount,0) as casual, coalesce(compcount,0) as competitive from cas full outer join comp using (playerid);
+create view scores as select playerid, round, section, sum(points) as points from results group by playerid, round, section;
+create view compscores as select playerid, round, scores.points + coalesce(bonus.points, 0.0) as points from scores left outer join bonus using (playerid, round) where scores.section = 'competitive';
+create view comptable as select rank() over (order by points desc) as rank, playerid, points from (select playerid, sum(points) as points from compscores group by playerid) as x;
+create view compscoresall as select compscores.* from compscores inner join played using (playerid) where played.competitive = 4;
+create view comptableall as select (rank() over (order by points desc)) - 1 as rank, playerid, points from (select playerid, sum(points) as points from compscoresall group by playerid) as x;
+create view grouped as select * from (select round, rank/10 as rankgroup, sum(compscoresall.points) over (partition by rank/10, round) as points from comptableall inner join compscoresall using (playerid)) as x group by round, rankgroup, points;
+create view groupedfactors as select round, rankgroup, round((points/avg(points) over (partition by rankgroup))::numeric,2) as factor from grouped order by rankgroup, grouped.round;
