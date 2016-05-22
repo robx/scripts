@@ -1,0 +1,11 @@
+create table players (id SERIAL UNIQUE, name text, country text, nick text);
+alter table players add unique(name);
+insert into players (name, country, nick) select name, country, nick from dcomb group by name, country, nick;
+insert into players (name, country, nick) select name, country, nick from combined group by name, country, nick except select name, country, nick from players;
+create table results (round int, section text, puzzle int, points int, playerid int, foreign key (playerid) references players(id), unique(playerid, round, section, puzzle));
+insert into results (select 1, 'competitive', ordinality, unnest, players.id from (select name, unnest, ordinality from comp1, unnest(puzzles) with ordinality) x, players where x.name = players.name);
+create table times (round int, section text, time interval, playerid int, foreign key (playerid) references players(id), unique(playerid, round, section));
+insert into times select round, 'competitive', time, players.id from combined inner join players using (name);
+insert into times select substr(round,1,1)::int, 'casual', time, players.id from dcomb inner join players using (name) where round like '%ca';
+create table bonus (round int, points double precision, playerid int, foreign key (playerid) references players(id), unique (round, playerid));
+insert into bonus select * from (select substr(round,1,1)::int, points-array_sum(puzzles) as bonus, players.id from dcomb inner join players using (name) where round like '%co') as x where bonus > 0.0;
