@@ -37,5 +37,39 @@ UNION
 
 -- ...
 
--- general leaderboard, without bonus
+-- simple general leaderboard, without bonus
 SELECT name, sum(array_sum(puzzles)) FROM dcomb GROUP BY name ORDER BY sum DESC;
+
+CREATE VIEW playedcasual AS
+ SELECT name,
+    playedcasual
+   FROM ( SELECT name,
+            count(*) OVER (PARTITION BY name) AS playedcasual
+           FROM dcomb
+          WHERE (dcomb.round LIKE '%ca')) cas
+  GROUP BY name, playedcasual;
+CREATE VIEW playedcomp AS
+ SELECT name,
+    playedcomp
+   FROM ( SELECT name,
+            count(*) OVER (PARTITION BY name) AS playedcomp
+           FROM dcomb
+          WHERE (dcomb.round LIKE '%co')) comp
+  GROUP BY name, playedcomp;
+
+CREATE VIEW general AS
+ SELECT dcomb.name,
+    country,
+    nick,
+    sum(array_sum(puzzles)) AS points,
+    playedcasual.playedcasual AS casual,
+    playedcomp.playedcomp AS competitive
+   FROM dcomb,
+    playedcasual,
+    playedcomp
+  WHERE ((dcomb.name = playedcasual.name) AND (dcomb.name = playedcomp.name))
+  GROUP BY dcomb.name, dcomb.country, dcomb.nick, playedcasual.playedcasual, playedcomp.playedcomp;
+
+
+-- fancy general leaderboard, with number of played rounds of each type
+SELECT rank() OVER (ORDER BY points DESC), * from general;
