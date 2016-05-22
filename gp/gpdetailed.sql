@@ -62,12 +62,11 @@ CREATE VIEW general AS
     country,
     nick,
     sum(array_sum(puzzles)) AS points,
-    playedcasual.playedcasual AS casual,
-    playedcomp.playedcomp AS competitive
-   FROM dcomb,
-    playedcasual,
-    playedcomp
-  WHERE ((dcomb.name = playedcasual.name) AND (dcomb.name = playedcomp.name))
+    COALESCE(playedcasual.playedcasual, 0) AS casual,
+    COALESCE(playedcomp.playedcomp, 0) AS competitive
+   FROM dcomb
+     LEFT OUTER JOIN playedcasual USING (name)
+     LEFT OUTER JOIN playedcomp USING (name)
   GROUP BY dcomb.name, dcomb.country, dcomb.nick, playedcasual.playedcasual, playedcomp.playedcomp;
 
 
