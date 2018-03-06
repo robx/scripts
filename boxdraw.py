@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# coding=utf8
+#!/usr/bin/env python3
 
 import curses
 
@@ -13,8 +12,8 @@ class Grid(object):
 
     def __init__(self, w, h):
         self.cells = {}
-        for i in xrange(w):
-            for j in xrange(h):
+        for i in range(w):
+            for j in range(h):
                 self.cells[i, j] = 0
 
     def toggle_edge(self, p, q):
@@ -73,8 +72,8 @@ def main():
         if drawing:
             g.toggle_edge(p, q)
         p = q
-        for x in xrange(w - 1):
-            for y in xrange(h - 1):
+        for x in range(w - 1):
+            for y in range(h - 1):
                 scr.addstr(y, x, g.charat((x, y)).encode("utf-8"))
         scr.move(p[1], p[0])
         scr.refresh()
